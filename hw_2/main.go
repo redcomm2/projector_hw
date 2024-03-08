@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Zookeeper struct {
 	Name string
@@ -16,14 +18,13 @@ type Animal struct {
 	InCage bool
 }
 
-func (keeper Zookeeper) addAnimal(cage *Cage, animal *Animal) error {
+func (keeper Zookeeper) addAnimal(cage *Cage, animal *Animal) {
 	if cage.Animal == nil {
 		cage.Animal = animal
 		cage.isOccupied = true
 		animal.InCage = true
 		fmt.Printf("Animal %s has been placed to the cage by zookeeper %s\n", animal.Name, keeper.Name)
 	}
-	return nil
 }
 
 func (keeper Zookeeper) getCage() *Cage {
