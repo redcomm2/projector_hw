@@ -9,8 +9,7 @@ type Zookeeper struct {
 }
 
 type Cage struct {
-	isOccupied bool
-	Animal     *Animal
+	Animal *Animal
 }
 
 type Animal struct {
@@ -21,16 +20,13 @@ type Animal struct {
 func (keeper Zookeeper) addAnimal(cage *Cage, animal *Animal) {
 	if cage.Animal == nil {
 		cage.Animal = animal
-		cage.isOccupied = true
 		animal.InCage = true
 		fmt.Printf("Animal %s has been placed to the cage by zookeeper %s\n", animal.Name, keeper.Name)
 	}
 }
 
 func (keeper Zookeeper) getCage() *Cage {
-	return &Cage{
-		isOccupied: false,
-	}
+	return &Cage{}
 }
 
 func main() {
@@ -39,28 +35,23 @@ func main() {
 	}
 
 	dog := Animal{
-		Name:   "Sharik",
-		InCage: false,
+		Name: "Sharik",
 	}
 
 	cat := Animal{
-		Name:   "Murzik",
-		InCage: false,
+		Name: "Murzik",
 	}
 
 	snake := Animal{
-		Name:   "Sam",
-		InCage: false,
+		Name: "Sam",
 	}
 
 	rat := Animal{
-		Name:   "Phil",
-		InCage: false,
+		Name: "Phil",
 	}
 
 	cow := Animal{
-		Name:   "Zorka",
-		InCage: false,
+		Name: "Zorka",
 	}
 
 	cage1 := keeper.getCage()
@@ -74,4 +65,7 @@ func main() {
 	keeper.addAnimal(cage3, &snake)
 	keeper.addAnimal(cage4, &rat)
 	keeper.addAnimal(cage5, &cow)
+
+	fmt.Printf("Is animal %s in cage: %t\n", cat.Name, cat.InCage)
+	fmt.Printf("Is animal %s in cage: %t\n", cow.Name, cow.InCage)
 }
