@@ -4,198 +4,153 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
 type Player struct {
 	Name      string
-	Location  *Location
-	Inventory *Item
-}
-
-type Item struct {
-	Name string
-}
-
-type Location struct {
-	Name        string
-	Description string
-	Decision    Decision
+	Inventory []string
 }
 
 type Decision struct {
-	Choice string
+	Description string
+	NextSceneID string
+	ActionID    string
+}
+
+type Scene struct {
+	ID          string
+	Description string
+	Decisions   []Decision
+}
+
+var scenes map[string]Scene
+
+func initGame() {
+	scenes = map[string]Scene{
+		"start": {
+			ID:          "start",
+			Description: "Stephen woke up at the entrance to the cave with a backpack containing matches, a flashlight, and a knife. Which do you take?",
+			Decisions: []Decision{
+				{Description: "Take the matches.", NextSceneID: "choosePath"},
+				{Description: "Take the flashlight.", NextSceneID: "choosePath"},
+				{Description: "Take the knife.", NextSceneID: "choosePath", ActionID: "takeKnife"},
+				{Description: "Don't take anything.", NextSceneID: "choosePath"},
+			},
+		},
+		"choosePath": {
+			ID:          "choosePath",
+			Description: "There are two paths ahead: one leading to a cave and another to a forest. Where do you go?",
+			Decisions: []Decision{
+				{Description: "Enter the cave.", NextSceneID: "caveDeath"},
+				{Description: "Go to the forest.", NextSceneID: "forest"},
+			},
+		},
+		"caveDeath": {
+			ID:          "caveDeath",
+			Description: "You enter the cave and encounter a beast. Unfortunately, you are not prepared to fight it. Game Over.",
+		},
+		"forest": {
+			ID:          "forest",
+			Description: "You are in a dark forest. There's a motionless figure ahead. It's a bear.",
+			Decisions: []Decision{
+				{Description: "Approach the bear.", NextSceneID: "bearEncounter"},
+				{Description: "Avoid the bear and look for a way out.", NextSceneID: "campScene"},
+			},
+		},
+		"bearEncounter": {
+			ID:          "bearEncounter",
+			Description: "As you approach, the bear wakes up and attacks you.",
+			Decisions: []Decision{
+				{Description: "Fight back.", NextSceneID: "campScene", ActionID: "fightBear"},
+				{Description: "Run away.", NextSceneID: "campScene"},
+			},
+		},
+		"campScene": {
+			ID:          "campScene",
+			Description: "You find an abandoned camp with a locked safe.",
+			Decisions: []Decision{
+				{Description: "Try to open the safe.", NextSceneID: "startScene", ActionID: "openSafe"},
+			},
+		},
+	}
 }
 
 func main() {
-	runGame()
+	player := &Player{Name: "Stephen"}
+	initGame()
+	enterScene("start", player)
 }
 
-func runGame() {
-	fmt.Println("Welcome to the New World!!!")
-	fmt.Println("Stephen woke up at the entrance to the cave. " +
-		"He only remembers his name. Next to him is a backpack in which he finds matches, a flashlight, and a knife.")
-
-	player := Player{
-		Name: "Stephen",
+func enterScene(sceneID string, player *Player) {
+	scene, exists := scenes[sceneID]
+	if !exists {
+		fmt.Println("Scene does not exist.")
+		return
 	}
 
-	unknownPlace := Location{
-		Name:        "Uknown place",
-		Description: "Uknown place, where player woke up",
+	fmt.Println(scene.Description)
+	for index, decision := range scene.Decisions {
+		fmt.Printf("[%d] %s\n", index+1, decision.Description)
 	}
 
-	player.Location = &unknownPlace
+	makeDecision(scene, player)
+}
 
-	for {
-		fmt.Println("Choose an item to add to your inventory (or choose not to take anything):")
-		items := []string{"Matches", "Knife", "Flashlight", "None"}
+func makeDecision(scene Scene, player *Player) {
+	fmt.Print("Choose an option: ")
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(input)
+	choice, err := strconv.Atoi(input)
 
-		for i, item := range items {
-			fmt.Printf("[%d] %s\n", i+1, item)
-		}
-
-		fmt.Print("Enter the number of your choice: ")
-		reader := bufio.NewReader(os.Stdin)
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-
-		switch input {
-		case "1":
-			player.Inventory = &Item{Name: "Matches"}
-			fmt.Println("Matches added to your inventory.")
-		case "2":
-			player.Inventory = &Item{Name: "Knife"}
-			fmt.Println("Knife added to your inventory.")
-		case "3":
-			player.Inventory = &Item{Name: "Flashlight"}
-			fmt.Println("Flashlight added to your inventory.")
-		case "4":
-			fmt.Println("No item chosen.")
-		default:
-			fmt.Println("Invalid choice, please select a valid item number.")
-			continue
-		}
-
-		break
+	if err != nil || choice < 1 || choice > len(scene.Decisions) {
+		fmt.Println("Invalid choice, try again.")
+		makeDecision(scene, player)
+	} else {
+		decision := scene.Decisions[choice-1]
+		handleDecision(decision, player)
 	}
+}
 
-	desicionInUnknownPlace1 := Decision{
-		Choice: "Go to cave",
-	}
-
-	desicionInUnknownPlace2 := Decision{
-		Choice: "Go to forest",
-	}
-
-	decisionsInUnknownPlace := []Decision{desicionInUnknownPlace1, desicionInUnknownPlace2}
-
-	forest := Location{
-		Name:        "Forest",
-		Description: "Dark forest",
-	}
-
-	for {
-		fmt.Println("Choose where you go?")
-		for i, item := range decisionsInUnknownPlace {
-			fmt.Printf("[%d] %s\n", i+1, item.Choice)
-		}
-
-		reader := bufio.NewReader(os.Stdin)
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-
-		switch input {
-		case "1":
-			fmt.Println("There is beast in cave. You died.")
-			fmt.Println("Game over.")
-			os.Exit(1)
-		case "2":
-			unknownPlace.Decision = desicionInUnknownPlace2
-
-			fmt.Printf("You find yourself in the %s.", forest.Name)
-		default:
-			fmt.Println("Invalid choice, please select a valid item number.")
-			continue
-		}
-
-		break
-	}
-
-	fmt.Println("You see motionless animal. Choose what you want to do with it?")
-
-	desicionInForest1 := Decision{
-		Choice: "Do nothing",
-	}
-
-	desicionInForest2 := Decision{
-		Choice: "Go to animal",
-	}
-
-	decisionsInForest := []Decision{desicionInForest1, desicionInForest2}
-
-	for {
-		fmt.Println("Choose where you go?")
-		for i, item := range decisionsInForest {
-			fmt.Printf("[%d] %s\n", i+1, item.Choice)
-		}
-
-		reader := bufio.NewReader(os.Stdin)
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-
-		switch input {
-		case "1":
-			forest.Decision = desicionInForest1
-		case "2":
-			fmt.Println("You are approaching an animal. It turned out to be a wild bear. He wakes up and attacks you.")
-
-			if player.Inventory.Name == "Knife" {
-				fmt.Println("There was a knife in your pocket. With its help you kill the bear. " +
-					"Next to him you find a bloody piece of paper with the inscription: safe code 43.")
-
-			} else {
-				fmt.Println("You didn’t have anything to protect yourself from the wild beast. You are dead. Game over.")
-				os.Exit(1)
-			}
-			forest.Decision = desicionInForest2
-		default:
-			fmt.Println("Invalid choice, please select a valid item number.")
-			continue
-		}
-
-		break
-	}
-
-	campInForest := Location{
-		Name:        "Camp in Forest",
-		Description: "Adonded camp in forest",
-	}
-
-	fmt.Printf("You see the %s. You decided to go there", campInForest.Name)
-
-	fmt.Println("In the camp, in one of the tents you see a safe. You approach it and try to open it, but it is closed. " +
-		"It has a panel for entering a password. You are trying to retrieve the password:")
-
-	attempts := 0
-	for {
-		if attempts >= 3 {
-			fmt.Println("You still haven't guessed the password. You feel weak and lose consciousness.")
-			runGame()
-		}
-
-		reader := bufio.NewReader(os.Stdin)
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-
-		if input == "43" {
-			fmt.Println("In the safe you find a map. You understand how to get out of the forest and reach people. " +
-				"Congratulations, you've won!")
-			os.Exit(1)
+func handleDecision(decision Decision, player *Player) {
+	fmt.Println(decision.ActionID)
+	switch decision.ActionID {
+	case "takeKnife":
+		player.Inventory = append(player.Inventory, "Knife")
+		fmt.Println("Knife added to your inventory.")
+	case "fightBear":
+		if contains(player.Inventory, "Knife") {
+			fmt.Println("You successfully defend yourself with the knife. You find a clue that says '43'.")
 		} else {
-			fmt.Println("Wrong password...")
+			fmt.Println("Without a weapon, you have no chance. Game Over.")
+			os.Exit(1)
+			return
 		}
-
-		attempts++
+	case "openSafe":
+		fmt.Println("Enter the code for the safe:")
+		reader := bufio.NewReader(os.Stdin)
+		code, _ := reader.ReadString('\n')
+		code = strings.TrimSpace(code)
+		if code == "43" {
+			fmt.Println("The safe opens, revealing a way out of the forest.")
+		} else {
+			fmt.Println("Wrong code. The safe remains locked.")
+		}
+		return
 	}
+
+	if decision.NextSceneID != "" {
+		enterScene(decision.NextSceneID, player)
+	}
+}
+
+func contains(slice []string, item string) bool {
+	for _, i := range slice {
+		if i == item {
+			return true
+		}
+	}
+	return false
 }
