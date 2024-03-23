@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"crypto/sha1"
 	"fmt"
 	"os"
 	"strings"
@@ -37,20 +36,20 @@ func main() {
 
 	// New searchby hash
 	start = time.Now()
-	searchByHashMapResult, err := searchByHashMap(searchMap, word)
+	searchByHashMapResult, err := searchByMap(searchMap, word)
 	fmt.Printf("Hash result number: %d", len(searchByHashMapResult))
 	if err != nil {
-		fmt.Println("Error with searchByHashMap:", err)
+		fmt.Println("Error with searchByMap:", err)
 		return
 	}
 	searchByHashMapDuration := time.Since(start)
 
-	fmt.Printf("searchByHashMap took %v\n", searchByHashMapDuration)
+	fmt.Printf("searchByMap took %v\n", searchByHashMapDuration)
 	//End of new search
 }
 
-func searchByHashMap(searchMap map[string][]string, userWord string) ([]string, error) {
-	return searchMap[createHash(userWord)], nil
+func searchByMap(searchMap map[string][]string, userWord string) ([]string, error) {
+	return searchMap[userWord], nil
 }
 
 func oldSearch(lines []string, userWord string) []string {
@@ -94,23 +93,13 @@ func createSearchHashMap(lines []string) (map[string][]string, error) {
 		lineWords := strings.Split(line, " ")
 
 		for _, word := range lineWords {
-			hashedWord := createHash(word)
-			if !sliceContains(wordMap[hashedWord], line) {
-				wordMap[hashedWord] = append(wordMap[hashedWord], line)
+			if !sliceContains(wordMap[word], line) {
+				wordMap[word] = append(wordMap[word], line)
 			}
 		}
 	}
 
 	return wordMap, nil
-}
-
-func createHash(word string) string {
-	hash := sha1.New()
-	hash.Write([]byte(strings.ToLower(word)))
-	bs := hash.Sum(nil)
-	hashedWord := fmt.Sprintf("%x", bs)
-
-	return hashedWord
 }
 
 func sliceContains(slice []string, str string) bool {
