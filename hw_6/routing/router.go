@@ -2,11 +2,16 @@ package routing
 
 import (
 	"projector_hw/hw_6/entity"
-	"projector_hw/hw_6/entity/transport"
 )
 
+type PublicTransport interface {
+	BoardPassenger(p *entity.Passenger)
+	UnboardPassenger(p *entity.Passenger)
+	Move()
+}
+
 type Route struct {
-	transports []transport.PublicTransport
+	transports []PublicTransport
 }
 
 func (r *Route) MoveByRoute(p *entity.Passenger) {
@@ -17,7 +22,7 @@ func (r *Route) MoveByRoute(p *entity.Passenger) {
 	}
 }
 
-func (r *Route) AddTransport(t transport.PublicTransport) []transport.PublicTransport {
+func (r *Route) AddTransport(t PublicTransport) []PublicTransport {
 	r.transports = append(r.transports, t)
 
 	return r.transports
