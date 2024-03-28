@@ -3,47 +3,50 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 )
 
-func randomizer(randChan chan int) {
-	for {
+func randomize(randChan chan int) {
+	for i := 0; i < 10; i++ {
 		min := 10
 		max := 30
-		randChan <- rand.Intn(max-min+1) + min
-		time.Sleep(1 * time.Second)
+		randomNum := rand.Intn(max-min+1) + min
+		randChan <- randomNum
+		fmt.Printf("Random num is: %d. ", randomNum)
+		time.Sleep(time.Second)
 	}
+	close(randChan)
+}
+
+func averageCalculate(randChan chan int, avgChan chan float64) {
+	var numbers []int
+	for num := range randChan {
+		numbers = append(numbers, num)
+		sum := 0
+		for _, v := range numbers {
+			sum += v
+		}
+		avg := float64(sum) / float64(len(numbers))
+		avgChan <- avg
+	}
+	close(avgChan)
+}
+
+func print(avgChan chan float64, done chan<- bool) {
+	for avg := range avgChan {
+		fmt.Printf("Average: %f\n", avg)
+	}
+	done <- true
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
 	randChan := make(chan int)
-	numbers := make([]int, 0)
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	avgChan := make(chan float64)
+	done := make(chan bool)
 
-	go randomizer(randChan)
+	go randomize(randChan)
+	go averageCalculate(randChan, avgChan)
+	go print(avgChan, done)
 
-	go func() {
-		for {
-			select {
-			case num := <-randChan:
-				numbers = append(numbers, num)
-				total := 0
-				for _, v := range numbers {
-					total += v
-				}
-				average := float64(total) / float64(len(numbers))
-				fmt.Printf("Received %d, Average so far: %.2f\n", num, average)
-			case <-c:
-				fmt.Println("\nProgram interrupted. Exiting.")
-				os.Exit(0)
-			}
-		}
-	}()
-
-	select {}
+	<-done
 }
