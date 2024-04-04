@@ -95,7 +95,6 @@ func main() {
 	mux.HandleFunc("/student/", authorize("teacher")(studentHandler))
 
 	log.Printf("Server starting on port %d\n", serverPort)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", serverPort), mux))
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
