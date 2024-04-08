@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -91,10 +92,17 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/login", loginHandler)
-	mux.HandleFunc("/students", authorize("teacher")(studentsListHandler))
-	mux.HandleFunc("/student/", authorize("teacher")(studentHandler))
+	mux.HandleFunc("/students", authorize("teacher", studentsListHandler))
+	mux.HandleFunc("/student/", authorize("teacher", studentHandler))
 
+	s := &http.Server{
+		Addr:    ":8000",
+		Handler: mux,
+	}
 	log.Printf("Server starting on port %d\n", serverPort)
+	if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Printf("server serve failed: %s", err)
+	}
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -139,9 +147,18 @@ func studentsListHandler(w http.ResponseWriter, r *http.Request) {
 
 func studentHandler(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimPrefix(r.URL.Path, "/student/")
-	id, _ := strconv.Atoi(idStr)
+	id, err := strconv.Atoi(idStr)
 
-	sessionToken, _ := r.Cookie("session_token")
+	if err != nil {
+		http.Error(w, "Invalid student ID format", http.StatusBadRequest)
+		return
+	}
+
+	sessionToken, err := r.Cookie("session_token")
+	if err != nil {
+		http.Error(w, "Error reading session token", http.StatusBadRequest)
+	}
+
 	tokenParts := strings.Split(sessionToken.Value, ":")
 	classIndex, _ := strconv.Atoi(tokenParts[2])
 

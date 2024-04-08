@@ -7,23 +7,21 @@ import (
 	"time"
 )
 
-func authorize(role string) func(http.HandlerFunc) http.HandlerFunc {
-	return func(next http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			sessionToken, err := r.Cookie("session_token")
-			if err != nil || sessionToken.Value == "" {
-				http.Redirect(w, r, "/login", http.StatusSeeOther)
-				return
-			}
-
-			tokenParts := strings.Split(sessionToken.Value, ":")
-			if len(tokenParts) != 3 || tokenParts[0] != role {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
-
-			next(w, r)
+func authorize(role string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sessionToken, err := r.Cookie("session_token")
+		if err != nil || sessionToken.Value == "" {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
 		}
+
+		tokenParts := strings.Split(sessionToken.Value, ":")
+		if len(tokenParts) != 3 || tokenParts[0] != role {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		next(w, r)
 	}
 }
 
